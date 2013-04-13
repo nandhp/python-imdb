@@ -42,8 +42,11 @@ def application(environ, start_response):
                     # Convert names to "First Last"
                     if key in ('cast', 'directors', 'writers'):
                         for i, nm in enumerate(out):
-                            #out[i] = u' '.join(parse_name(nm[0])[1:3])
-                            out[i] = (u' '.join(parse_name(nm[0])[1:3]),)+nm[1:]
+                            parsed_name = parse_name(nm[0])
+                            if parsed_name[1]:
+                                out[i] = (u' '.join(parsed_name[1:3]),)+nm[1:]
+                            else:
+                                out[i] = (parsed_name[2],)+nm[1:]
                     obj[key] = out
         response_body = json.dumps(obj)
     else:

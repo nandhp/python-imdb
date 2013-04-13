@@ -32,7 +32,7 @@ TITLERE = re.compile(r'^(?P<title>(?P<name>.+?)(?: \((?:'
                         +r'(?P<year>\d{4}|\?{4})(?P<unique>/[IVXLCDM]+)?)\))+)'
                         +r'(?P<trailing>.*?)$',
                       re.UNICODE)
-NAMERE = re.compile(r'^(?P<name>(?P<last>.+?), (?P<first>.+?)(?: \((?:'
+NAMERE = re.compile(r'^(?P<name>(?P<last>.+?)(?:, (?P<first>.+?))?(?: \((?:'
                         +r'(?P<unique>[IVXLCDM]+))\))*)$',
                         #+r'(?P<trailing>.*?)$',
                       re.UNICODE)
@@ -78,7 +78,7 @@ def parse_name(name):
     match = NAMERE.match(name)
     if not match:# or match.group('trailing'):
         raise ValueError, 'Cannot parse "%s" as an IMDb name' % name
-    first = match.group('first')
+    first = match.group('first') or None
     last = match.group('last')
     unique = match.group('unique')
     return IMDbParsedName(name, first, last, unique)
