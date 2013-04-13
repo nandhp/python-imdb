@@ -59,7 +59,7 @@ def application(environ, start_response):
 <h1>404 Not Found</h1>
 </body>
 </html>
-'''        
+'''
 
     status = '200 OK'
     response_headers = [('Content-Type', ctype),
