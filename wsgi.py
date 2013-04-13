@@ -5,6 +5,7 @@ As a reminder, making IMDb data publically available through this API may
 be a violation of the IMDb terms of use.
 """
 
+import os
 from cgi import parse_qs
 import imdb
 import json
@@ -13,7 +14,10 @@ from imdb.parsers import parse_name
 SUPPORTED_ARGS = ('title', 'rating', 'plot', 'color_info', 'genres',
     'running_time', 'certificates', 'cast', 'directors', 'writers', 'aka')
 
-iface = imdb.IMDb(dbfile='imdb.zip')
+imdbfile = 'imdb.zip'
+if 'IMDB' in os.environ:
+    imdbfile = os.environ['IMDB']
+iface = imdb.IMDb(dbfile=imdbfile)
 
 def application(environ, start_response):
     path = environ.get('PATH_INFO', '')
