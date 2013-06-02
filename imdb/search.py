@@ -112,7 +112,7 @@ def create_index(dbfile, dbdir, debug=False):
     swf.close()
 
 def _search_index(dbfile, words, size, strip_stems=True,
-                 year=None, deltayear=2, debug=False):
+                 year=None, deltayear=8, debug=False):
     """Yield a subset of the database that somewhat matches words.
     Returns any movies that contains a subword of any of words.
     (See the _subwords function.) Shorter subwords means more results, but
@@ -173,14 +173,14 @@ def _search_index(dbfile, words, size, strip_stems=True,
 RELEVANCE_SCALE = (
     # .--- At least this many reviews earns the movie
     # v       v--- this multiplicative factor
-    (400000, 1.5),      # A must-see
-    (200000, 1.3),      # Very popular
-    (40000,  1.2),      # Probably the one you're looking for
-    (10000,  1.1),      # Average
-    (5000,   1.0),      # Somewhat uncommon
-    (1000,   0.95),     # Pretty uncommon
-    (1,      0.9),      # Nobody's ever heard of it
-    (0,      0.8),      # Totally unrated
+    (400000, 1.10),     # A must-see
+    (200000, 1.08),     # Very popular
+    (40000,  1.05),     # Probably the one you're looking for
+    (10000,  1.02),     # Average
+    (5000,   1.00),     # Somewhat uncommon
+    (1000,   0.99),     # Pretty uncommon
+    (1,      0.95),     # Nobody's ever heard of it
+    (0,      0.90),     # Totally unrated
 )
 
 def search(dbfile, query, year=None, size=5, debug=False):
