@@ -158,13 +158,13 @@ def _search_index(dbfile, words, size, strip_stems=True,
             continue
 
         # Get SEARCHABLE\tYEAR\tTITLE
-        year, title, akafor, nratings = line.decode('utf-8').split('\t')[1:]
+        ryear, title, akafor, nratings = line.decode('utf-8').split('\t')[1:]
 
         # Check that the year is within tolerances
-        if validyears and year and int(year) not in validyears:
+        if validyears and ryear and int(ryear) not in validyears:
             continue
 
-        yield title, year, akafor, nratings
+        yield title, ryear, akafor, nratings
         if i % 100 == 0:
             timer.step()
     indexfh.close()
@@ -188,6 +188,7 @@ THIS_YEAR = date.today().year
 
 def search(dbfile, query, year=None, size=5, debug=False):
     """Search the database for query, optionally with an estimated year."""
+    year = int(year)
     words = query.split()
     results = _search_index(dbfile, words, size, year=year, debug=debug)
 
@@ -204,7 +205,7 @@ def search(dbfile, query, year=None, size=5, debug=False):
         if yearstr not in lcquery:
             matchers.append(SequenceMatcher(b=lcquery+yearstr+')'))
 
-    for title, year, akafor, nratings in results:
+    for title, ryear, akafor, nratings in results:
         stripped_title = parsers.TITLERE.match(title).group('name').lower()
         lctitle = title.lower()
         # Take highest score from all matches checked
@@ -226,15 +227,14 @@ def search(dbfile, query, year=None, size=5, debug=False):
             nratings = int(nratings)
             stored_title = akafor if akafor else title
             # Weight score by the number of ratings
-            if nratings == 0 and year and int(year) >= THIS_YEAR:
+            for threshold, factor in RELEVANCE_SCALE:
+                if nratings >= threshold:
+                    break
+            if year >= THIS_YEAR and ryear and int(ryear) >= THIS_YEAR:
                 # Extend the benefit of the doubt to prerelease movies
-                # (and others from this year) that have not yet had
-                # five votes on IMDb.
-                factor = 1
-            else:
-                for threshold, factor in RELEVANCE_SCALE:
-                    if nratings >= threshold:
-                        break
+                # (and others from this year) that have not had many
+                # votes on IMDb.
+                factor = max(factor, 1)
             score *= factor
             if stored_title not in scores or scores[stored_title] < score:
                 scores[stored_title] = score
