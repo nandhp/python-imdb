@@ -188,7 +188,8 @@ THIS_YEAR = date.today().year
 
 def search(dbfile, query, year=None, size=5, debug=False):
     """Search the database for query, optionally with an estimated year."""
-    year = int(year)
+    if year:
+        year = int(year)
     words = query.split()
     results = _search_index(dbfile, words, size, year=year, debug=debug)
 
@@ -230,7 +231,8 @@ def search(dbfile, query, year=None, size=5, debug=False):
             for threshold, factor in RELEVANCE_SCALE:
                 if nratings >= threshold:
                     break
-            if year >= THIS_YEAR and ryear and int(ryear) >= THIS_YEAR:
+            if year and ryear and \
+                   year >= THIS_YEAR and int(ryear) >= THIS_YEAR:
                 # Extend the benefit of the doubt to prerelease movies
                 # (and others from this year) that have not had many
                 # votes on IMDb.
