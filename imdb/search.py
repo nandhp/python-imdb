@@ -7,6 +7,7 @@ import re
 from chunkedfile import ChunkedFile
 from utils import Timer, open_compressed
 import parsers
+from datetime import date
 
 # Helper functions for search
 
@@ -183,6 +184,8 @@ RELEVANCE_SCALE = (
     (0,      0.90),     # Totally unrated
 )
 
+THIS_YEAR = date.today().year
+
 def search(dbfile, query, year=None, size=5, debug=False):
     """Search the database for query, optionally with an estimated year."""
     words = query.split()
@@ -220,11 +223,18 @@ def search(dbfile, query, year=None, size=5, debug=False):
 
         # If the movie scored at all, add it to the result list
         if score > 0:
+            nratings = int(nratings)
             stored_title = akafor if akafor else title
             # Weight score by the number of ratings
-            for threshold, factor in RELEVANCE_SCALE:
-                if int(nratings) >= threshold:
-                    break
+            if nratings == 0 and year and int(year) >= THIS_YEAR:
+                # Extend the benefit of the doubt to prerelease movies
+                # (and others from this year) that have not yet had
+                # five votes on IMDb.
+                factor = 1
+            else:
+                for threshold, factor in RELEVANCE_SCALE:
+                    if nratings >= threshold:
+                        break
             score *= factor
             if stored_title not in scores or scores[stored_title] < score:
                 scores[stored_title] = score
