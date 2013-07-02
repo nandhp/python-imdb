@@ -184,10 +184,9 @@ RELEVANCE_SCALE = (
     (0,      0.90),     # Totally unrated
 )
 
-THIS_YEAR = date.today().year
-
 def search(dbfile, query, year=None, size=5, debug=False):
     """Search the database for query, optionally with an estimated year."""
+    this_year = date.today().year
     if year:
         year = int(year)
     words = query.split()
@@ -232,7 +231,7 @@ def search(dbfile, query, year=None, size=5, debug=False):
                 if nratings >= threshold:
                     break
             if year and ryear and \
-                   year >= THIS_YEAR and int(ryear) >= THIS_YEAR:
+                   year == this_year and int(ryear) == this_year:
                 # Extend the benefit of the doubt to prerelease movies
                 # (and others from this year) that have not had many
                 # votes on IMDb.
