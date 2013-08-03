@@ -230,12 +230,15 @@ def search(dbfile, query, year=None, size=5, debug=False):
             for threshold, factor in RELEVANCE_SCALE:
                 if nratings >= threshold:
                     break
-            if year and ryear and \
-                   year == this_year and int(ryear) == this_year:
-                # Extend the benefit of the doubt to prerelease movies
-                # (and others from this year) that have not had many
-                # votes on IMDb.
-                factor = max(factor, 1)
+            if year and ryear:
+                ryear = int(ryear)
+                if year == this_year and ryear == this_year:
+                    # Extend the benefit of the doubt to prerelease movies
+                    # (and others from this year) that have not had many
+                    # votes on IMDb.
+                    factor = max(factor, 1)
+                # Slight weight to disambiguate results by year-similarity
+                factor += max(0,8-abs(year-ryear))*0.001
             score *= factor
             if stored_title not in scores or scores[stored_title] < score:
                 scores[stored_title] = score
