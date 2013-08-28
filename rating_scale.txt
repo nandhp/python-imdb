@@ -1,0 +1,25 @@
+# The relevance scale factor
+# factor = (0.0205376)*nratings**(0.167496)+(0.9226)
+# is based on a fit of the following table:
+400000 1.10
+200000 1.08
+40000  1.05
+10000  1.02
+5000   1.00
+1000   0.99
+5      0.95
+
+# Which is based on the original used for some time:
+#RELEVANCE_SCALE = (
+#    # .--- At least this many reviews earns the movie
+#    # v       v--- this multiplicative factor
+#    (400000, 1.10),     # A must-see
+#    (200000, 1.08),     # Very popular
+#    (40000,  1.05),     # Probably the one you're looking for
+#    (10000,  1.02),     # Average
+#    (5000,   1.00),     # Somewhat uncommon
+#    (1000,   0.99),     # Pretty uncommon
+#    (1,      0.95),     # Nobody's ever heard of it
+#    (0,      0.90),     # Totally unrated
+#)
+#

@@ -8,6 +8,7 @@ from chunkedfile import ChunkedFile
 from utils import Timer, open_compressed
 import parsers
 from datetime import date
+from math import exp
 
 # Helper functions for search
 
@@ -171,19 +172,6 @@ def _search_index(dbfile, words, size, strip_stems=True,
     if debug:
         print 'Completed search in', timer, 'seconds.'
 
-RELEVANCE_SCALE = (
-    # .--- At least this many reviews earns the movie
-    # v       v--- this multiplicative factor
-    (400000, 1.10),     # A must-see
-    (200000, 1.08),     # Very popular
-    (40000,  1.05),     # Probably the one you're looking for
-    (10000,  1.02),     # Average
-    (5000,   1.00),     # Somewhat uncommon
-    (1000,   0.99),     # Pretty uncommon
-    (1,      0.95),     # Nobody's ever heard of it
-    (0,      0.90),     # Totally unrated
-)
-
 def search(dbfile, query, year=None, size=5, debug=False):
     """Search the database for query, optionally with an estimated year."""
     this_year = date.today().year
@@ -197,7 +185,6 @@ def search(dbfile, query, year=None, size=5, debug=False):
     scores = {}
     akascores = {}
     cutoff = 0.6
-    factor = RELEVANCE_SCALE[-1][1]
     lcquery = query.lower()
     matchers = [SequenceMatcher(b=lcquery)]
     if year:
@@ -206,15 +193,21 @@ def search(dbfile, query, year=None, size=5, debug=False):
             matchers.append(SequenceMatcher(b=lcquery+yearstr+')'))
 
     for title, ryear, akafor, nratings in results:
-        stripped_title = parsers.TITLERE.match(title).group('name').lower()
-        lctitle = title.lower()
+        titles = [title.lower(),
+                  parsers.TITLERE.match(title).group('name').lower()]
+        # Try matching without the subtitle. But only do this if the query
+        # included a year, since otherwise "ABC (1991)" and "ABC: Revenge
+        # of the DEF (1999)" rank the same. FIXME: Auto-derate titles that
+        # match this way?
+        if year and ':' in titles[-1]:
+            titles.append(titles[-1][0:titles[-1].find(':')])
         # Take highest score from all matches checked
         score = 0
         mycutoff = cutoff
         # Match against query with and without year
         for matcher in matchers:
             # Check titile both with and without the suffix
-            for mystr in lctitle, stripped_title:
+            for mystr in titles:
                 matcher.set_seq1(mystr)
                 if matcher.real_quick_ratio() > mycutoff and \
                     matcher.quick_ratio() > mycutoff and \
@@ -227,9 +220,12 @@ def search(dbfile, query, year=None, size=5, debug=False):
             nratings = int(nratings)
             stored_title = akafor if akafor else title
             # Weight score by the number of ratings
-            for threshold, factor in RELEVANCE_SCALE:
-                if nratings >= threshold:
-                    break
+            factor = (0.0205376)*nratings**(0.167496)+(0.9226)
+            # Slightly discourage TV shows in favor of movies. This
+            # makes it more difficult to match mini-series, but that's
+            # just too bad.
+            if stored_title[0] == '"':
+                factor *= 0.95
             if year and ryear:
                 ryear = int(ryear)
                 if year == this_year and ryear == this_year:
@@ -237,8 +233,8 @@ def search(dbfile, query, year=None, size=5, debug=False):
                     # (and others from this year) that have not had many
                     # votes on IMDb.
                     factor = max(factor, 1)
-                # Slight weight to disambiguate results by year-similarity
-                factor += max(0,8-abs(year-ryear))*0.001
+                # Adjust weight to disambiguate results by year-similarity
+                factor *= exp(-(year-ryear)**2/160.0)
             score *= factor
             if stored_title not in scores or scores[stored_title] < score:
                 scores[stored_title] = score
