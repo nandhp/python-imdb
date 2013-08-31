@@ -10,6 +10,8 @@ from cgi import parse_qs
 import imdb
 import json
 from imdb.parsers import parse_name
+from functools import wraps
+import signal
 
 SUPPORTED_ARGS = ('title', 'rating', 'plot', 'color_info', 'genres',
     'running_time', 'certificates', 'cast', 'directors', 'writers', 'aka')
@@ -18,6 +20,30 @@ imdbfile = 'imdb.zip'
 if 'IMDB' in os.environ:
     imdbfile = os.environ['IMDB']
 iface = imdb.IMDb(dbfile=imdbfile)
+
+# From http://stackoverflow.com/a/2282656/462117
+class TimeoutError(Exception):
+    pass
+def timeout(seconds=10):
+    def decorator(func):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError()
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+        return wraps(func)(wrapper)
+    return decorator
+
+# Timeout searches after seven minutes. This allows excessively slow
+# searches to be rejected entirely.
+@timeout(7*60)
+def run_search(query, year):
+    return iface.search(query, year=year)
 
 def application(environ, start_response):
     path = environ.get('PATH_INFO', '')
@@ -32,8 +58,18 @@ def application(environ, start_response):
                 year = int(params['y'][0])
             except:
                 year = None
-            results = iface.search(params['q'][0], year=year)
-            if not results:
+            try:
+                results = run_search(params['q'][0], year)
+            except TimeoutError:
+                results = None
+                # Return no results. The query is too complicated to
+                # complete in a reasonable amount of time. It probably
+                # would not produce any result, even with additional time.
+                # Retrying the request will result in the same error.
+                obj['_error'] = 'Timeout with no results'
+            if '_error' in obj:
+                pass
+            elif not results:
                 obj['_error'] = 'No results'
             else:
                 obj['_score'] = results[0][1]
@@ -41,12 +77,13 @@ def application(environ, start_response):
                     out = getattr(results[0][0], key)
                     # Convert names to "First Last"
                     if key in ('cast', 'directors', 'writers'):
-                        for i, nm in enumerate(out):
-                            parsed_name = parse_name(nm[0])
+                        for i, name in enumerate(out):
+                            parsed_name = parse_name(name[0])
                             if parsed_name[1]:
-                                out[i] = (u' '.join(parsed_name[1:3]),)+nm[1:]
+                                out[i] = (u' '.join(parsed_name[1:3]),) + \
+                                    name[1:]
                             else:
-                                out[i] = (parsed_name[2],)+nm[1:]
+                                out[i] = (parsed_name[2],)+name[1:]
                     obj[key] = out
         response_body = json.dumps(obj)
     else:
@@ -73,7 +110,5 @@ def application(environ, start_response):
 # For testing
 if __name__ == '__main__':
     from wsgiref.simple_server import make_server
-    httpd = make_server('localhost', 8051, application)
-    # httpd.handle_request() # Serve a single request
-    httpd.serve_forever()
+    make_server('localhost', 8051, application).serve_forever()
 
