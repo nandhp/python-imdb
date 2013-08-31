@@ -659,7 +659,7 @@ class IMDbCertificatesParser(_IMDbBasicParser):
             # Check for approved country
             if ':' not in data[1]:
                 return ()
-            country, certificate = data[1].split(':',1)
+            country, certificate = data[1].split(':', 1)
             if country not in self.countries:
                 return ()
             else:

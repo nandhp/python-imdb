@@ -96,7 +96,7 @@ def _main(argv):
         print ''
 
 if __name__ == '__main__':
-    _main([i.decode('utf-8') for i in sys.argv[1:]])
+    _main([arg.decode('utf-8') for arg in sys.argv[1:]])
     #print search('texas chainsaw massacre', year=1974)
     #print search('war games', year=1983)
     #print search('dark city - 1998')
