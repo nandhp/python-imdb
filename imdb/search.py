@@ -186,34 +186,35 @@ def search(dbfile, query, year=None, size=5, debug=False):
     akascores = {}
     cutoff = 0.6
     lcquery = query.lower()
-    matchers = [SequenceMatcher(b=lcquery)]
+    matchers = [(1.0, SequenceMatcher(b=lcquery))]
     if year:
         yearstr = ' ('+str(year)
         if yearstr not in lcquery:
-            matchers.append(SequenceMatcher(b=lcquery+yearstr+')'))
+            matchers.append((1.0, SequenceMatcher(b=lcquery+yearstr+')')))
 
     for title, ryear, akafor, nratings in results:
-        titles = [title.lower(),
-                  parsers.TITLERE.match(title).group('name').lower()]
+        titles = [(1.0, title.lower()),
+                  (1.0, parsers.TITLERE.match(title).group('name').lower())]
         # Try matching without the subtitle. But only do this if the query
         # included a year, since otherwise "ABC (1991)" and "ABC: Revenge
-        # of the DEF (1999)" rank the same. FIXME: Auto-derate titles that
-        # match this way?
-        if year and ':' in titles[-1]:
-            titles.append(titles[-1][0:titles[-1].find(':')])
+        # of the DEF (1999)" rank the same. We exact a 95% penalty against
+        # matches that occur this way.
+        if year and ':' in titles[-1][1]:
+            titles.append((0.95, titles[-1][1][0:titles[-1][1].find(':')]))
         # Take highest score from all matches checked
         score = 0
         mycutoff = cutoff
         # Match against query with and without year
-        for matcher in matchers:
+        for matcherpenalty, matcher in matchers:
             # Check titile both with and without the suffix
-            for mystr in titles:
+            for titlepenalty, mystr in titles:
                 matcher.set_seq1(mystr)
                 if matcher.real_quick_ratio() > mycutoff and \
-                    matcher.quick_ratio() > mycutoff and \
-                    matcher.ratio() > mycutoff:
-                    score = max(score, matcher.ratio())
-                    mycutoff = score
+                    matcher.quick_ratio() > mycutoff:
+                    myratio = matcher.ratio()*matcherpenalty*titlepenalty
+                    if myratio > mycutoff:
+                        score = max(score, myratio)
+                        mycutoff = score
 
         # If the movie scored at all, add it to the result list
         if score > 0:
