@@ -227,7 +227,11 @@ def search(dbfile, query, year=None, size=5, debug=False):
             # just too bad.
             if stored_title[0] == '"':
                 factor *= 0.95
-            if year and ryear:
+            # Movies without a known year are extremely unlikely to be the
+            # correct result.
+            if not ryear:
+                factor *= 0.90
+            elif year: # and ryear
                 ryear = int(ryear)
                 if year == this_year and ryear == this_year:
                     # Extend the benefit of the doubt to prerelease movies

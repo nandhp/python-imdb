@@ -630,6 +630,10 @@ class IMDbRunningTimeParser(_IMDbBasicParser):
             country, durationstr = durationstr.split(':')
         else:
             country = None
+        # running-times.gz has 7 films with a running time like "54 min."
+        # instead of "54".
+        if 'min' in durationstr:
+            durationstr = durationstr[0:durationstr.find('min')].strip()
         return (title, (int(durationstr), country))
 
     def search(self, queries=None):
