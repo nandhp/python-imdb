@@ -53,7 +53,7 @@ def format_response(query, year):
         # Return no results. The query is too complicated to
         # complete in a reasonable amount of time. It probably
         # would not produce any result, even with additional time.
-        # Retrying the request will likely produce in the same error.
+        # Retrying the request will likely produce the same error.
         return {'_error': 'Timeout with no results'}
     if not result:
         return {'_error': 'No results'}
@@ -84,31 +84,35 @@ def expire_cache():
             item = searchcache_mru.pop(0)
             del searchcache[item]
 
+def cached_search(query, year):
+    # Look up query in the cache
+    cachekey = (query.lower(), year)
+    if cachekey in searchcache:
+        searchcache_mru.remove(cachekey)
+    else:
+        searchcache[cachekey] = format_response(query, year)
+        expire_cache()
+    # Fetch the item from the cache and update its MRU list position
+    obj = searchcache[cachekey]
+    searchcache_mru.append(cachekey)
+    return obj
+
+def search(params):
+    try:
+        year = int(params['y'][0])
+    except:
+        year = None
+    if 'q' not in params or not params['q'] or not params['q'][0]:
+        return {'_error': 'No query provided'}
+    return cached_search(params['q'][0], year)
+
 def application(environ, start_response):
     path = environ.get('PATH_INFO', '')
     params = parse_qs(environ.get('QUERY_STRING',''))
     if path == '/imdb':
         ctype = 'application/json'
-        try:
-            year = int(params['y'][0])
-        except:
-            year = None
-        if 'q' not in params or not params['q'] or not params['q'][0]:
-            obj = {'_error': 'No query provided'}
-        else:
-            query = params['q'][0]
-            # Look up query in the cache
-            cachekey = (query.lower(), year)
-            if cachekey in searchcache:
-                searchcache_mru.remove(cachekey)
-            else:
-                searchcache[cachekey] = format_response(query, year)
-                expire_cache()
-            # Fetch the item from the cache and update its MRU list position
-            obj = searchcache[cachekey]
-            searchcache_mru.append(cachekey)
         # JSON-format the response
-        response_body = json.dumps(obj)
+        response_body = json.dumps(search(params))
     else:
         ctype = 'text/html'
         status = '404 Not Found'

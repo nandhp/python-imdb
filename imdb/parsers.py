@@ -642,7 +642,8 @@ class IMDbRunningTimeParser(_IMDbBasicParser):
         for title, value in self._run_search(queries):
             data[title].append(value[0])
         for title in data.keys():
-            data[title] = int(sum(data[title])/len(data[title]))
+            data[title] = sorted(data[title])[int(len(data[title])/2)] # Median
+            #data[title] = int(sum(data[title])/len(data[title])) # Mean
         return data        
 
 class IMDbCertificatesParser(_IMDbBasicParser):
