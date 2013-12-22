@@ -76,10 +76,10 @@ class IMDb(object):
         with Timer(indent=2, quiet=not self.debug):
             search.create_index(self.dbfile, dbdir, debug=self.debug)
 
-    def search(self, query, year=None):
+    def search(self, query, year=None, timeout=None):
         """Search the database for query, optionally with an estimated year."""
         scores, akascores = search.search(self.dbfile, query, year,
-            debug=self.debug)
+            debug=self.debug, timeout=timeout)
 
         # Return the top-scoring results
         numret = 30

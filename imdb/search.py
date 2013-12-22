@@ -113,7 +113,7 @@ def create_index(dbfile, dbdir, debug=False):
         swf.write("%s %d\n" % (word, numtimes))
     swf.close()
 
-def _search_index(dbfile, words, size, strip_stems=True,
+def _search_index(timer, dbfile, words, size, strip_stems=True,
                  year=None, deltayear=8, debug=False):
     """Yield a subset of the database that somewhat matches words.
     Returns any movies that contains a subword of any of words.
@@ -140,7 +140,6 @@ def _search_index(dbfile, words, size, strip_stems=True,
     if debug:
         print wordlist
         print "Searching..."
-    timer = Timer()
 
     # Reading lines out of a GzipFile is very slow; using gzip(1) is ~6.5x
     # faster. For further speedup, we could use zgrep(1) to extract our
@@ -172,13 +171,14 @@ def _search_index(dbfile, words, size, strip_stems=True,
     if debug:
         print 'Completed search in', timer, 'seconds.'
 
-def search(dbfile, query, year=None, size=5, debug=False):
+def search(dbfile, query, year=None, size=5, debug=False, timeout=None):
     """Search the database for query, optionally with an estimated year."""
     this_year = date.today().year
     if year:
         year = int(year)
     words = query.split()
-    results = _search_index(dbfile, words, size, year=year, debug=debug)
+    timer = Timer(timeout=timeout)
+    results = _search_index(timer, dbfile, words, size, year=year, debug=debug)
 
     # Similar to diffutils.get_close_matches, but ignores capitalization
     # and IMDb suffixes.
@@ -218,6 +218,7 @@ def search(dbfile, query, year=None, size=5, debug=False):
 
         # If the movie scored at all, add it to the result list
         if score > 0:
+            timer.check_expired()
             nratings = int(nratings)
             stored_title = akafor if akafor else title
             # Weight score by the number of ratings

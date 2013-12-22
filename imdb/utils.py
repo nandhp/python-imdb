@@ -8,13 +8,18 @@ from time import time, sleep
 # every x seconds (default 1/6.0). If RATELIMIT or x is false, never sleep.
 RATELIMIT = (1/6.0, 0.1)
 
+class TimerTimeout(Exception):
+    """A Timer has exceeded its timeout."""
+    pass
+
 class Timer(object):
     """Provide elapsed-time statistics.
        Also support rate-limiting to avoid excessive CPU usage during data
-       processing, in cases where background operation is desired."""
+       processing, in cases where background operation is desired, and
+       timeout support for terminating long-running activities."""
 
     def __init__(self, message='Completed in %s seconds.', rl_min_dur=0,
-            indent=0, quiet=False):
+            indent=0, timeout=None, quiet=False):
         """Initialize a RateLimit object. min_dur is the initial duration
         to run without rate-limiting (i.e. to only rate-limit long-running
         tasks). If quiet=True, will not print elapsed time when used as a
@@ -24,6 +29,7 @@ class Timer(object):
         self.message = ' '*indent + message
         self.quiet = quiet
         self.min_dur = rl_min_dur
+        self.timeout = timeout
         assert(RATELIMIT and RATELIMIT[0])
 
     def step(self):
@@ -32,10 +38,18 @@ class Timer(object):
         # Rate-limit by using only small slices of CPU time.
         # It's like nice, but better and slower.
         now = time()
+        if self.timeout and now-self.start > self.timeout:
+            raise TimerTimeout
         if (not self.min_dur or now-self.start > self.min_dur) and \
                 now-self.last > RATELIMIT[0]:
             sleep(RATELIMIT[1])
             self.last = now
+
+    def check_expired(self):
+        """Check the timer duration for timeout; but do not rate-limit."""
+        now = time()
+        if self.timeout and now-self.start > self.timeout:
+            raise TimerTimeout
 
     def time(self):
         """Return the elapsed duration."""

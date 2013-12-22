@@ -10,8 +10,7 @@ from cgi import parse_qs
 import imdb
 import json
 from imdb.parsers import parse_name
-from functools import wraps
-import signal
+from imdb.utils import TimerTimeout
 
 SUPPORTED_ARGS = ('title', 'rating', 'plot', 'color_info', 'genres',
     'running_time', 'certificates', 'cast', 'directors', 'writers', 'aka')
@@ -21,35 +20,16 @@ if 'IMDB' in os.environ:
     imdbfile = os.environ['IMDB']
 iface = imdb.IMDb(dbfile=imdbfile)
 
-# From http://stackoverflow.com/a/2282656/462117
-class TimeoutError(Exception):
-    pass
-def timeout(seconds=10):
-    def decorator(func):
-        def _handle_timeout(signum, frame):
-            raise TimeoutError()
-        def wrapper(*args, **kwargs):
-            signal.signal(signal.SIGALRM, _handle_timeout)
-            signal.alarm(seconds)
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                signal.alarm(0)
-            return result
-        return wraps(func)(wrapper)
-    return decorator
-
-# Timeout searches after several minutes. This allows excessively slow
-# searches to be rejected entirely.
-@timeout(7*60)
 def run_search(query, year):
-    results = iface.search(query, year=year)
+    # Timeout searches after several minutes. This allows excessively
+    # slow searches to be rejected entirely.
+    results = iface.search(query, year=year, timeout=7*60)
     return results[0] if results else None
 
 def format_response(query, year):
     try:
         result = run_search(query, year)
-    except TimeoutError:
+    except TimerTimeout:
         # Return no results. The query is too complicated to
         # complete in a reasonable amount of time. It probably
         # would not produce any result, even with additional time.
