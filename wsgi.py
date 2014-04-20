@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """wsgi.py - Simple WSGI service to provide a JSON API for the database.
-As a reminder, making IMDb data publically available through this API may
+As a reminder, making IMDb data publicly available through this API may
 be a violation of the IMDb terms of use.
 """
 
@@ -53,23 +53,26 @@ def format_response(query, year):
 
 # Cache the last 50 search results for speed and to support retrys
 # after gateway timeout.
-CACHESIZE = 50
 searchcache = {}
 searchcache_mru = []
 
-def expire_cache():
+def expire_cache(cache_size=50):
     # If the cache is full, expire a few old entries
-    if len(searchcache_mru) > CACHESIZE:
-        while len(searchcache_mru) > CACHESIZE-5:
+    if len(searchcache_mru) > cache_size:
+        newsize = max(int(cache_size-cache_size*0.1), 0)
+        while len(searchcache_mru) > newsize:
             item = searchcache_mru.pop(0)
             del searchcache[item]
 
-def cached_search(query, year):
+def cached_search(query, year, use_cache=True):
     # Look up query in the cache
+    fetch = True
     cachekey = (query.lower(), year)
     if cachekey in searchcache:
         searchcache_mru.remove(cachekey)
-    else:
+        if use_cache:
+            fetch = False
+    if fetch:
         searchcache[cachekey] = format_response(query, year)
         expire_cache()
     # Fetch the item from the cache and update its MRU list position
@@ -82,9 +85,15 @@ def search(params):
         year = int(params['y'][0])
     except:
         year = None
+    use_cache = True
+    if 'c' in params and len(params['c']) > 0:
+        if params['c'][0] == '0':
+            use_cache = False
+        elif params['c'][0] == 'clear':
+            expire_cache(0)     # Remove all items from the cache
     if 'q' not in params or not params['q'] or not params['q'][0]:
         return {'_error': 'No query provided'}
-    return cached_search(params['q'][0], year)
+    return cached_search(params['q'][0], year, use_cache=use_cache)
 
 def application(environ, start_response):
     path = environ.get('PATH_INFO', '')
