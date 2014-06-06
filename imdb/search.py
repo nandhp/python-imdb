@@ -108,10 +108,11 @@ def create_index(dbfile, dbdir, debug=False):
     #print "Skipped %d duplicate AKA titles" % skipped
 
     # Write frequencies to stopwords file
-    swf = ChunkedFile(dbfile, 'stopwords', mode='a')
-    for word, numtimes in frequencies.most_common():
-        swf.write("%s %d\n" % (word, numtimes))
-    swf.close()
+    if False:
+        swf = ChunkedFile(dbfile, 'stopwords', mode='a')
+        for word, numtimes in frequencies.most_common():
+            swf.write("%s %d\n" % (word, numtimes))
+        swf.close()
 
 def _search_index(timer, dbfile, words, size, strip_stems=True,
                  year=None, deltayear=8, debug=False):
