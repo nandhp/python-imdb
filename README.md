@@ -25,7 +25,7 @@ this package uses Unicode in most places.
 Download these files into `/some/directory` and then run `python imdb --rebuild-db /some/directory` to convert the data files (necessary to support seeking within the data files) and build a search index.
 This will result in files `imdb.zip` and `imdb.zip.idx`.
 
-[Unfortunately, I have not yet implemented support for databases which do not contain all of the listed files. However, it shouldn't be hard to implement.]
+For search, `movies.list` is required and `aka-titles.list` and `ratings.list` are strongly recommended. However, each file is optional, with associated data and/or features simply being unavailable.
 
 The module includes examples of a simple program (`example.py`)
 and a WSGI-based JSON API endpoint (`wsgi.py`).
