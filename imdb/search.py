@@ -44,7 +44,7 @@ def _clean_words(words, strip_stems=True):
     for word in normed:
         if len(word) <= 2 or word in _STEMS:
             continue
-        # Do not 
+        # Do not include small numbers
         if len(word) <= 4:
             try:
                 num = int(word)
@@ -82,7 +82,7 @@ def create_index(dbfile, dbdir, debug=False):
                 akafor = obj[0]             # Real name of the title
                 # If it's a duplicate AKA (for indexing purposes), skip it.
                 # The same AKA title may be repeated. For example:
-                #     (aka Die Hard 4.0 (2007)) (UK) 
+                #     (aka Die Hard 4.0 (2007)) (UK)
                 #     (aka Die Hard 4.0 (2007)) (Germany)
                 if last_time and last_time[0:2] == obj[0:2]:
                     skipped += 1
@@ -99,10 +99,11 @@ def create_index(dbfile, dbdir, debug=False):
                 nratings = ratings[data.title].nratings
             # Write movie to output
             indexfh.write("\t".join((''.join(searchable),
-                             data.year.encode('ascii') if data.year else '',
-                             data.title.encode('utf-8'),
-                             akafor.encode('utf-8'),
-                             str(nratings))))
+                                     data.year.encode('ascii')
+                                     if data.year else '',
+                                     data.title.encode('utf-8'),
+                                     akafor.encode('utf-8'),
+                                     str(nratings))))
             indexfh.write("\n")
     indexfh.close()
     #print "Skipped %d duplicate AKA titles" % skipped
@@ -115,12 +116,12 @@ def create_index(dbfile, dbdir, debug=False):
         swf.close()
 
 def _search_index(timer, dbfile, words, size, strip_stems=True,
-                 year=None, deltayear=8, debug=False):
+                  year=None, deltayear=8, debug=False):
     """Yield a subset of the database that somewhat matches words.
     Returns any movies that contains a subword of any of words.
     (See the _subwords function.) Shorter subwords means more results, but
     slower performance.
-    
+
     words -- List of words.
     size -- Length of subwords to use for search. (See _subwords function.)
     strip_stems -- Omit really common subwords. (See _subwords function.)

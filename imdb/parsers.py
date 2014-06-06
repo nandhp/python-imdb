@@ -25,17 +25,17 @@ def parsers():
 IMDbParsedTitle = namedtuple('IMDbParsedTitle',
                              ('title', 'name', 'year', 'unique', 'cat'))
 IMDbParsedName = namedtuple('IMDbParsedName',
-                             ('name', 'first', 'last', 'unique'))
+                            ('name', 'first', 'last', 'unique'))
 # Regular expressions for IMDb title and name suffixes
 TITLERE = re.compile(r'^(?P<title>(?P<name>.+?)(?: \((?:'
-                        +r'(?P<TV>TV)|(?P<V>V)|(?P<VG>VG)|(?P<mini>mini)|'
-                        +r'(?P<year>\d{4}|\?{4})(?P<unique>/[IVXLCDM]+)?)\))+)'
-                        +r'(?P<trailing>.*?)$',
-                      re.UNICODE)
+                     +r'(?P<TV>TV)|(?P<V>V)|(?P<VG>VG)|(?P<mini>mini)|'
+                     +r'(?P<year>\d{4}|\?{4})(?P<unique>/[IVXLCDM]+)?)\))+)'
+                     +r'(?P<trailing>.*?)$',
+                     re.UNICODE)
 NAMERE = re.compile(r'^(?P<name>(?P<last>.+?)(?:, (?P<first>.+?))?(?: \((?:'
-                        +r'(?P<unique>[IVXLCDM]+))\))*)$',
-                        #+r'(?P<trailing>.*?)$',
-                      re.UNICODE)
+                    +r'(?P<unique>[IVXLCDM]+))\))*)$',
+                    #+r'(?P<trailing>.*?)$',
+                    re.UNICODE)
 
 # Data attached to entries in names databases e.g. "(uncredited)", "[Driver]",
 # etc.
@@ -50,7 +50,7 @@ def parse_title(title):
     IMDbParsedTitle object."""
     match = TITLERE.match(title)
     if not match or match.group('trailing'):
-        raise ValueError, 'Cannot parse "%s" as an IMDb title' % title
+        raise ValueError('Cannot parse "%s" as an IMDb title' % (title,))
     name = match.group('name')
     year = match.group('year')
     if year == u'????':
@@ -75,9 +75,11 @@ def parse_title(title):
     return IMDbParsedTitle(title, name, year, unique, cat)
 
 def parse_name(name):
+    """Parse a name string into its components and return an
+    IMDbParsedName object."""
     match = NAMERE.match(name)
     if not match:# or match.group('trailing'):
-        raise ValueError, 'Cannot parse "%s" as an IMDb name' % name
+        raise ValueError('Cannot parse "%s" as an IMDb name' % (name,))
     first = match.group('first') or None
     last = match.group('last')
     unique = match.group('unique')
@@ -95,7 +97,7 @@ def _skip_to(fileobj, indicator, additional_skips):
             break
         i += 1
     else:
-        raise SyntaxError, "File did not contain expected indicator"
+        raise SyntaxError("File did not contain expected indicator")
     # Skip additional lines as required
     for i in xrange(additional_skips):
         next(fileobj)
@@ -106,7 +108,7 @@ def _find_seeks_index(dbfile, indexname, queries, debug=False):
     """Use the index file to find exact seek positions for relevant
     records. End locations are not necessary since we are guaranteed that
     the data will be present, so a number of occurances is sufficient for
-    prompt termination.""" 
+    prompt termination."""
     timer = Timer(rl_min_dur=1)
     locs = Counter()
     if debug:
@@ -141,7 +143,7 @@ def _find_seeks_bookmarks(fileobj, queries, debug=False):
     information we're looking for."""
     timer = Timer()
     locs = Counter()
-    endlocs = {}            
+    endlocs = {}
     if debug:
         print "  Searching bookmarks..."
     for query in sorted(queries):
@@ -212,7 +214,7 @@ class _IMDbParser(object):
         about a given title."""
         if do_copy:
             copy_to = ChunkedFile(self.dbfile, self.listname, mode='a',
-                autoflush=True if self.indexname else False)
+                                  autoflush=True if self.indexname else False)
             tellobj = copy_to
             filenames = self.origfiles
         else:
@@ -265,9 +267,9 @@ class _IMDbParser(object):
             copy_to.close()
 
         if self.indexname:
-            # Write out a separate index, if required (e.g. names databases) 
+            # Write out a separate index, if required (e.g. names databases)
             indexfh = ChunkedFile(self.dbfile, self.indexname, mode='a',
-                autoflush=False)
+                                  autoflush=False)
             for title, linenos in sorted(indexobj.items()):
                 indexfh.write(title)
                 indexfh.write("\t")
@@ -305,10 +307,10 @@ class _IMDbParser(object):
         # Locate seek positions for all queries
         if queries and self.indexname:  # Use index
             locs = list(_find_seeks_index(self.dbfile, self.indexname, queries,
-                debug=self.debug))
+                                          debug=self.debug))
         elif queries:                   # Use bookmarks
             locs = list(_find_seeks_bookmarks(fileobj, queries,
-                debug=self.debug))
+                                              debug=self.debug))
         else:
             locs = [(None, None, 1)]     # Dummy values to start loop
 
@@ -368,13 +370,13 @@ class _IMDbParser(object):
         if self.debug:
             print 'Completed in', timer, 'seconds.'
         fileobj.close()
-    
+
     def search(self, queries=None):
         """Perform a search, returning results after optional subclass-specific
         postprocessing.
         """
         return self._run_search(queries)
-        
+
     def _skip_header(self, fileobj):
         """Skip header lines in fileobj (as an iterator)"""
         raise NotImplementedError
@@ -420,7 +422,7 @@ class IMDbMoviesParser(_IMDbParser):
             if line == '-'*80:
                 return None
             raise
-        return (fullname, loc)        
+        return (fullname, loc)
 
     # def _make_result(self, data)
     # def _make_locator(self, data)
@@ -592,10 +594,10 @@ class _IMDbBasicParser(_IMDbParser):
     # def _make_result(self, data)
     # def _make_locator(self, data)
     # def search(self, queries=None)
-        
+
 class IMDbColorInfoParser(_IMDbBasicParser):
     """Parser for IMDb data file color-info."""
-    
+
     filenames = ['color-info']
     is_property = True
 
@@ -625,7 +627,7 @@ class IMDbGenresParser(_IMDbBasicParser):
             data[title].append(value)
         for datalist in data.values():
             datalist.sort()
-        return data        
+        return data
 
 class IMDbRunningTimeParser(_IMDbBasicParser):
     """Parser for IMDb data file running-times."""
@@ -652,11 +654,11 @@ class IMDbRunningTimeParser(_IMDbBasicParser):
         for title in data.keys():
             data[title] = sorted(data[title])[int(len(data[title])/2)] # Median
             #data[title] = int(sum(data[title])/len(data[title])) # Mean
-        return data        
+        return data
 
 class IMDbCertificatesParser(_IMDbBasicParser):
     """Parser for IMDb data file certificates."""
-    
+
     filenames = ['certificates']
     is_property = True
     countries = ['USA']
@@ -724,7 +726,7 @@ class _IMDbNamesParser(_IMDbParser):
             title = match.group('title')
             match = CASTRE.match(match.group('trailing'))
             if not match:
-                raise ValueError, '%s does not match CASTRE' % line
+                raise ValueError('%s does not match CASTRE' % (line,))
             #if match.group('trailing'):
             #    print '"%s" has trailing garbage "%s"' \
             #        % (line, match.group('trailing'))
@@ -735,7 +737,7 @@ class _IMDbNamesParser(_IMDbParser):
             if order:
                 order = int(order)
             return (title, self.last_person[1],
-                          (self.last_person[0], character, order, notes))
+                    (self.last_person[0], character, order, notes))
         except ValueError:
             if line.strip('-') == '' and len(line) > 60:
                 return None

@@ -12,12 +12,12 @@ class ChunkedFile(object):
     Transparently supports reading gzip files.
     """
     def __init__(self, filename, subfile='', mode='r', chunksize=131072,
-            autoflush=True):
+                 autoflush=True):
         """Create a ChunkedFile object with given filename, I/O mode (r,w,a),
         and preferred chunk size. If you wish to manually control the chunk
         boundaries using bookmark() or flush(), set autoflush=False."""
         if mode not in 'rwa':
-            raise ValueError, 'Mode must be r or w or a'
+            raise ValueError('Mode must be r or w or a')
         try:
             self.zip = ZipFile(filename, mode, ZIP_DEFLATED)
             self._is_gzip = False
@@ -146,7 +146,7 @@ class ChunkedFile(object):
             pass
         if size > 0:
             ret = self.readbuf[:size]
-            self.readbuf = self.readbuf[size:]        
+            self.readbuf = self.readbuf[size:]
         elif size < 0:
             ret = self.readbuf
             self.readbuf = ''
@@ -172,7 +172,7 @@ class ChunkedFile(object):
                     return self.read(-1)
                 else:
                     raise StopIteration
-                
+
         # Split lines into separate buffer
         self.nextbuf = self.readbuf.splitlines(True)
         if self.readbuf[-1] != '\n':
@@ -215,11 +215,11 @@ class ChunkedFile(object):
         assert(self.pos == offset)
 
     def find_bookmark(self, bookmark, give_range=False):
-        """Determine an appropriate seek position near bookmark."""  
+        """Determine an appropriate seek position near bookmark."""
         pos = 0
         for chunk in self.chunks:
             if chunk.bookmark and chunk.bookmark < bookmark:
-                pos = chunk.pos 
+                pos = chunk.pos
         if give_range:
             ret_next = 0
             for chunk in self.chunks:
@@ -246,20 +246,20 @@ def _main(argv):
     """Simple program to read/write ChunkedFiles."""
     parser = ArgumentParser()
     parser.add_argument('--read',
-        action='store_const', const='r', dest='read',
-        help='Read data from file')
+                        action='store_const', const='r', dest='read',
+                        help='Read data from file')
     parser.add_argument('--seek', nargs=1, type=int,
-        help='Seek position before reading')
+                        help='Seek position before reading')
     parser.add_argument('--write',
-        action='store_const', const='w', dest='mode',
-        help='Write data to file')
+                        action='store_const', const='w', dest='mode',
+                        help='Write data to file')
     parser.add_argument('--append',
-        action='store_const', const='a', dest='mode',
-        help='Append data to file')
+                        action='store_const', const='a', dest='mode',
+                        help='Append data to file')
     parser.add_argument('file', nargs=1,
-        help='Container to read/write')
+                        help='Container to read/write')
     parser.add_argument('subfile', nargs='?',
-        help='Subfile to read/write')
+                        help='Subfile to read/write')
     args = parser.parse_args(argv[1:])
 
     def move_data(readfh, writefh):

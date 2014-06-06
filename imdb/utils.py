@@ -19,7 +19,7 @@ class Timer(object):
        timeout support for terminating long-running activities."""
 
     def __init__(self, message='Completed in %s seconds.', rl_min_dur=0,
-            indent=0, timeout=None, quiet=False):
+                 indent=0, timeout=None, quiet=False):
         """Initialize a RateLimit object. min_dur is the initial duration
         to run without rate-limiting (i.e. to only rate-limit long-running
         tasks). If quiet=True, will not print elapsed time when used as a
@@ -70,7 +70,7 @@ class Timer(object):
             print 'Exception occurred after %s seconds.' % self
 
 def open_compressed(filename=None, fileobj=None, mode='r',
-                    compressor=('gzip','--quiet')):
+                    compressor=('gzip', '--quiet')):
     """Read or write a compressed file using an external (de)compressor.
     One of filename and fileobj must be specified.
 
@@ -78,19 +78,19 @@ def open_compressed(filename=None, fileobj=None, mode='r',
     fileobj -- File object to wrap (de)compressor around.
     mode -- Must contain 'r' or 'w'. Passed to open if filename is provided.
     compressor -- Command-line of (de)compression program, for example,
-                  ['gzip','--quiet'].
+                  ['gzip', '--quiet'].
                   Specified compressor should behave like gzip(1)
                   (with respect to behavior with no arguments and with '-d').
     """
     if filename and not fileobj:
         fileobj = open(filename, mode)
     elif filename or not fileobj:
-        raise ValueError, "Must specify exactly one of filename or fileobj"
+        raise ValueError("Must specify exactly one of filename or fileobj")
     if 'r' in mode:
         return Popen(tuple(compressor) + ('-d',),
-            stdin=fileobj, stdout=PIPE, stderr=STDOUT).stdout
+                     stdin=fileobj, stdout=PIPE, stderr=STDOUT).stdout
     elif 'w' in mode:
         return Popen(tuple(compressor), stdin=PIPE, stdout=fileobj).stdin
     else:
-        raise ValueError, "Must specify read or write"
+        raise ValueError("Must specify read or write")
 
