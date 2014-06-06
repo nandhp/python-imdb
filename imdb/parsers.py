@@ -224,7 +224,11 @@ class _IMDbParser(object):
 
         for filename in filenames:
             if do_copy:
-                fileobj = open_compressed(filename)
+                try:
+                    fileobj = open_compressed(filename)
+                except IOError as e:
+                    print "  Skipping %s: %s" % (filename, e.strerror)
+                    continue
             else:
                 fileobj = ChunkedFile(self.dbfile, self.listname, mode='r')
                 tellobj = fileobj
@@ -289,7 +293,11 @@ class _IMDbParser(object):
             fileobj = ChunkedFile(self.dbfile, self.listname, mode='r')
         else:
             assert(len(self.origfiles) == 1)
-            fileobj = open_compressed(self.origfiles[0])
+            try:
+                fileobj = open_compressed(self.origfiles[0])
+            except IOError as e:
+                print "Skipping %s: %s" % (self.origfiles[0], e.strerror)
+                return
             self._skip_header(fileobj)
         if self.debug:
             print "Reading %s..." % self.listname
