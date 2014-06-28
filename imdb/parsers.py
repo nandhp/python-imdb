@@ -241,7 +241,7 @@ class _IMDbParser(object):
             for line in fileobj:
                 # Do not index video games or individual TV episodes
                 # (Not applicable for all file types)
-                if self.skip_tvvg and ("(VG)" in line or '{' in line):
+                if self.skip_tvvg and ('(VG)' in line or '{' in line):
                     continue
                 if copy_to:
                     copy_to.write(line)
@@ -342,7 +342,7 @@ class _IMDbParser(object):
                     # Do not index video games or individual TV episodes
                     # (Not applicable for all file types)
                     if not self.dbfile and self.skip_tvvg and \
-                            ("(VG)" in line or '{' in line):
+                            ('(VG)' in line or '{' in line):
                         #loc = fileobj.tell() # Don't seek/tell in gzip
                         continue
                     # Decode database (IMDb databases use ISO-8859-1)
@@ -524,10 +524,14 @@ class IMDbPlotParser(_IMDbParser):
             tag, data = line[0:2], line[4:]
         else:
             tag, data = '--', None
-        if tag == 'MV' and '(VG)' not in data and '{' not in data:
-            self.last_title = data
-            self.title_begin = loc
-            assert(not self.last_plot)
+        if tag == 'MV':
+            if '(VG)' in data or '{' in data:
+                self.last_title = None
+                # FIXME: Do not output plots for video games and TV episodes.
+            else:
+                self.last_title = data
+                self.title_begin = loc
+                assert(not self.last_plot)
         elif not self.last_title:
             return ()
             ## Skip to the next title
@@ -545,8 +549,6 @@ class IMDbPlotParser(_IMDbParser):
             plot = self.last_plot
             self.last_plot = []
 
-            # Only return the first plot summary for each movie
-            self.last_title = None
             return (title, self.title_begin, (plot, None))
             #data if tag == 'BY' else None) # FIXME: bylines
         return ()
@@ -557,8 +559,14 @@ class IMDbPlotParser(_IMDbParser):
     # def _make_locator(self, data)
 
     def search(self, queries=None):
-        # Return a dictionary
-        return dict(self._run_search(queries))
+        # Return a dictionary that contains the shortest plot summary.
+        # Test with, e.g. [Rec] (2007) and [Rec] 2 (2009).
+        data = defaultdict(list)
+        for title, value in self._run_search(queries):
+            data[title].append(value)
+        for title in data.keys():
+            data[title] = sorted(data[title], key=lambda x: len(x[0]))[0]
+        return data
 
 class _IMDbBasicParser(_IMDbParser):
     """Parser for IMDb data files formatted as basic lists
