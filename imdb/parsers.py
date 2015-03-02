@@ -30,7 +30,7 @@ IMDbParsedName = namedtuple('IMDbParsedName',
 TITLERE = re.compile(r'^(?P<title>(?P<name>.+?)(?: \((?:'
                      +r'(?P<TV>TV)|(?P<V>V)|(?P<VG>VG)|(?P<mini>mini)|'
                      +r'(?P<year>\d{4}|\?{4})(?P<unique>/[IVXLCDM]+)?)\))+)'
-                     +r'(?P<trailing>.*?)$',
+                     +r'(?P<trailing>(?:  .*)?)$',
                      re.UNICODE)
 NAMERE = re.compile(r'^(?P<name>(?P<last>.+?)(?:, (?P<first>.+?))?(?: \((?:'
                     +r'(?P<unique>[IVXLCDM]+))\))*)$',
@@ -731,10 +731,12 @@ class _IMDbNamesParser(_IMDbParser):
             assert(self.last_person[0])
             # Separate character, cast order information
             match = TITLERE.match(line)
+            if not match:
+                raise ValueError('Cannot extract title from %s' % (line,))
             title = match.group('title')
             match = CASTRE.match(match.group('trailing'))
             if not match:
-                raise ValueError('%s does not match CASTRE' % (line,))
+                raise ValueError('Cannot extract casting from %s' % (line,))
             #if match.group('trailing'):
             #    print '"%s" has trailing garbage "%s"' \
             #        % (line, match.group('trailing'))
