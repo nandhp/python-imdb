@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='python-imdb',
-      version='0.1.15',
+      version='0.1.16',
       description='Python interface to IMDb plain-text data files',
       author='nandhp',
       author_email='nandhp@gmail.com',
