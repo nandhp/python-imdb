@@ -493,7 +493,7 @@ class IMDbRatingParser(_IMDbParser):
                 raise
 
     def _make_result(self, (title, _, (distribution, nratings, score))):
-        return (title, IMDbRating(distribution, int(nratings), score))
+        return (title, IMDbRating(distribution, int(nratings, 10), score))
 
     #def _make_locator(self, data)
 
@@ -643,16 +643,32 @@ class IMDbRunningTimeParser(_IMDbBasicParser):
     filenames = ['running-times']
     is_property = True
 
-    def _make_result(self, (title, _, durationstr)):
-        if ':' in durationstr:
-            country, durationstr = durationstr.split(':')
-        else:
+    def _make_result(self, (title, _, duration)):
+        # Durations are of the form "[COUNTRY:]DURATION[:NUMBERS]"
+        # For example: "USA:30" or "27 min." or "1:10:43". We return
+        # the first colon-separated number in the string as the
+        # running time, ignoring all trailing garbage. (This leads to
+        # some running times being erroneously listed as 1 minute, but
+        # the IMDb website also does this.)
+        if duration[0].isdigit():
+            # No leading country
             country = None
+        else:
+            country, duration = duration.split(':', 1)
+        duration = duration.strip()
         # running-times.gz has 7 films with a running time like "54 min."
-        # instead of "54".
-        if 'min' in durationstr:
-            durationstr = durationstr[0:durationstr.find('min')].strip()
-        return (title, (int(durationstr), country))
+        # instead of "54". There's also "1o7", "2 1/2", "2 x 90", ....
+        try:
+            duration = int(duration, 10)
+        except ValueError:
+            # Could not parse as integer. Extract leading digits.
+            for i, c in enumerate(duration):
+                if not c.isdigit():
+                    duration = int(duration[:i], 10)
+                    break
+            else:
+                duration = None
+        return (title, (duration, country))
 
     def search(self, queries=None):
         # Return a dictionary that contains the average running time
@@ -745,7 +761,7 @@ class _IMDbNamesParser(_IMDbParser):
             order = match.group('order')
             notes = match.group('notes')
             if order:
-                order = int(order)
+                order = int(order, 10)
             return (title, self.last_person[1],
                     (self.last_person[0], character, order, notes))
         except ValueError:
