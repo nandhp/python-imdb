@@ -10,4 +10,5 @@ titles = [title for title, score in results]
 imdb.populate_rating(titles)
 for title in titles:
     r = title.rating
-    print u'%s has rating %s/10 (%d ratings)' % (title, r.score, r.nratings)
+    print (u'%s has rating %s/10 (%d ratings)' %
+           (title, str(r.score), r.nratings)).encode('utf-8')
