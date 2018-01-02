@@ -4,6 +4,44 @@ from collections import namedtuple
 from zipfile import ZipFile, BadZipfile, ZIP_DEFLATED
 from gzip import GzipFile
 from base64 import urlsafe_b64encode, urlsafe_b64decode
+import os
+
+class UnpackedZipInfo(object):
+    def __init__(self, file_size):
+        self.file_size = size
+
+class UnpackedZipFile(object):
+    """Wrapper class for a directory that implements the ZipFile interface"""
+
+    def __init__(self, filename, mode, compression=None, allowZip64=None):
+        assert mode == 'r'
+        assert os.path.isdir(filename)
+        self.dirname = filename
+
+    def _path(self, filename):
+        return os.path.join(self.dirname, filename)
+
+    def close(self):
+        """Close the object; does nothing"""
+        pass                    # Do nothing
+
+    def getinfo(self, filename):
+        """Return a ZipInfo-compatible structure with file metadata."""
+        statobj = os.stat(self._path(filename))
+        return UnpackedZipInfo(file_size=statobj.st_size)
+
+    def namelist(self):
+        """List (recursively) all of the filenames in the directory."""
+        for dirpath, dirnames, filenames in os.walk(self.dirname):
+            reldir = os.path.relpath(dirpath, self.dirname)
+            for filename in filenames:
+                filename = os.path.join(reldir, filename)
+                yield filename
+
+    def read(self, filename):
+        """Read and return the contents of a file."""
+        with open(self._path(filename), 'r') as fh:
+            return fh.read()
 
 ChunkInfo = namedtuple('ChunkInfo', ('name', 'pos', 'bookmark'))
 
@@ -18,15 +56,19 @@ class ChunkedFile(object):
         boundaries using bookmark() or flush(), set autoflush=False."""
         if mode not in 'rwa':
             raise ValueError('Mode must be r or w or a')
-        try:
-            self.zip = ZipFile(filename, mode, ZIP_DEFLATED)
-            self._is_gzip = False
-        except BadZipfile:
-            assert(mode == 'r')
-            # Transparent reading of gzip files
-            # (relatively fast, pure-python, some limitations)
-            self.zip = GzipFile(filename, mode)
-            self._is_gzip = True
+        self._is_gzip = False
+        if os.path.isdir(filename):
+            assert mode == 'r'
+            self.zip = UnpackedZipFile(filename, mode)
+        else:
+            try:
+                self.zip = ZipFile(filename, mode, ZIP_DEFLATED)
+            except BadZipfile:
+                assert mode == 'r'
+                # Transparent reading of gzip files
+                # (relatively fast, pure-python, some limitations)
+                self.zip = GzipFile(filename, mode)
+                self._is_gzip = True
         self.prefix = '%s/c.' % str(subfile) if subfile else 'c.'
         self.mode = mode
         self.chunksize = chunksize

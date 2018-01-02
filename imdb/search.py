@@ -9,6 +9,7 @@ from utils import Timer, open_compressed
 import parsers
 from datetime import date
 from math import exp
+from subprocess import Popen, PIPE, STDOUT
 
 # Helper functions for search
 
@@ -147,7 +148,11 @@ def _search_index(timer, dbfile, words, size, strip_stems=True,
     # faster. For further speedup, we could use zgrep(1) to extract our
     # subset using grep(1).
     #indexfh = ChunkedFile(dbfile, 'index')
-    indexfh = open_compressed(dbfile+'.idx')
+    if True:
+        indexfh = open_compressed(dbfile+'.idx')
+    else:
+        indexfh = Popen(('zgrep', '-F', '\n'.join(wordlist), dbfile+'.idx'),
+                                   stdout=PIPE, stderr=STDOUT).stdout
     #indexfh = open('idx.tmp')
 
     for i, line in enumerate(indexfh):
